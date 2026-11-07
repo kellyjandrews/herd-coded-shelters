@@ -8,7 +8,7 @@ body:
       value: |
         The first row must be a header using GitHub issue fields: title, body, labels.
         title is required. body is Markdown. labels is optional and comma-separated (quote the cell).
-        Up to 50 rows per batch.
+        Each feature batch contains at most 50 data rows. Larger CSVs are automatically split into separate batches.
   - type: textarea
     id: csv
     attributes:
