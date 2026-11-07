@@ -1,5 +1,3 @@
-import { groupCsvRows, serializeCsv } from "./feature-batches.mjs";
-
 const api = "https://api.github.com";
 const token = process.env.GH_TOKEN;
 const repo = process.env.REPO;
@@ -144,46 +142,8 @@ async function importBatch() {
   if (column("title") < 0) {
     await fail(number, "The first CSV row must be a header with title, body, and optional labels columns.");
   }
-  const batches = groupCsvRows([header, ...rows], maxRows);
-  if (batches.length > 1) {
-    const created = [];
-    for (let index = 0; index < batches.length; index++) {
-      const suffix = " (" + (index + 1) + "/" + batches.length + ")";
-      const batchIssue = await gh("/repos/" + repo + "/issues", {
-        method: "POST",
-        body: JSON.stringify({
-          title: issue.title.slice(0, 256 - suffix.length) + suffix,
-          body:
-            "Automatically split from #" +
-            number +
-            " into batches of at most " +
-            maxRows +
-            " data rows.\n\n```csv\n" +
-            serializeCsv(batches[index]) +
-            "\n```",
-          labels: [batchLabel],
-        }),
-      });
-      created.push("- #" + batchIssue.number + " " + batchIssue.title);
-    }
-
-    await gh("/repos/" + repo + "/issues/" + number + "/comments", {
-      method: "POST",
-      body: JSON.stringify({
-        body:
-          "This CSV contained more than " +
-          maxRows +
-          " data rows, so it was split into " +
-          batches.length +
-          " feature batches:\n\n" +
-          created.join("\n"),
-      }),
-    });
-    await gh("/repos/" + repo + "/issues/" + number, {
-      method: "PATCH",
-      body: JSON.stringify({ state: "closed", state_reason: "completed" }),
-    });
-    return;
+  if (rows.length > maxRows) {
+    await fail(number, "Split the CSV into batches of " + maxRows + " rows or fewer.");
   }
   const cell = (row, name) => (column(name) >= 0 ? (row[column(name)] ?? "").trim() : "");
 
